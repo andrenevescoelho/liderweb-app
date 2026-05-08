@@ -40,6 +40,9 @@ export async function initApp() {
   });
 
   console.log(`[LiderWeb] App iniciado — plataforma: ${platform}`);
+
+  // Registrar push notifications automaticamente
+  registerPush().catch(() => {});
 }
 
 // ── Push Notifications ───────────────────────────────────────────────────────
