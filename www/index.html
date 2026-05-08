@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Líder Web</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #111827;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: sans-serif;
+      color: #fff;
+    }
+    p { opacity: 0.5; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <p>Carregando Líder Web...</p>
+
+  <script type="module">
+    // Aguardar o Capacitor carregar
+    document.addEventListener('deviceready', onReady, false);
+    window.addEventListener('load', onReady);
+
+    let initialized = false;
+    async function onReady() {
+      if (initialized) return;
+      initialized = true;
+
+      // Importar e inicializar o app
+      const { initApp, registerPush } = await import('./src/capacitor.js').catch(() => ({}));
+      if (initApp) await initApp();
+      if (registerPush) await registerPush();
+    }
+  </script>
+</body>
+</html>
+

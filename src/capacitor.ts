@@ -57,10 +57,15 @@ export async function registerPush(): Promise<string | null> {
     await PushNotifications.register();
 
     return new Promise((resolve) => {
-      PushNotifications.addListener("registration", (token) => {
+      PushNotifications.addListener("registration", async (token) => {
         console.log("[LiderWeb] Push token:", token.value);
-        // Enviar token para o servidor LiderWeb
-        sendTokenToServer(token.value);
+        // Enviar token para o servidor
+        await fetch("https://liderweb.multitrackgospel.com/api/push/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ token: token.value, platform }),
+        }).catch(() => {});
         resolve(token.value);
       });
 
@@ -69,17 +74,16 @@ export async function registerPush(): Promise<string | null> {
         resolve(null);
       });
 
-      // Listener para notificações recebidas com app aberto
+      // Notificação recebida com app aberto
       PushNotifications.addListener("pushNotificationReceived", (notification) => {
         console.log("[LiderWeb] Notificação recebida:", notification);
         window.dispatchEvent(new CustomEvent("lw:push", { detail: notification }));
       });
 
-      // Listener para toque na notificação
+      // Toque na notificação — navegar para a URL
       PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
-        console.log("[LiderWeb] Toque na notificação:", action);
         const url = action.notification.data?.url;
-        if (url) window.location.href = url;
+        if (url) window.location.href = `https://liderweb.multitrackgospel.com${url}`;
       });
 
       setTimeout(() => resolve(null), 10000);
@@ -115,7 +119,49 @@ export async function haptic(style: "light" | "medium" | "heavy" = "light") {
   await Haptics.impact({ style: map[style] }).catch(() => {});
 }
 
-// ── Rede ─────────────────────────────────────────────────────────────────────
+// ── Google Sign-In nativo ────────────────────────────────────────────────────
+
+export async function googleSignInNative(): Promise<boolean> {
+  if (!isNative) return false;
+  try {
+    const { GoogleAuth } = await import("@codetrix-studio/capacitor-google-auth");
+    await GoogleAuth.initialize({
+      clientId: "510384512031-n27ieo0cqa1b5de7eg8jdvtqnk6qss52.apps.googleusercontent.com",
+      scopes: ["profile", "email"],
+      grantOfflineAccess: true,
+    });
+
+    const user = await GoogleAuth.signIn();
+    const idToken = user.authentication.idToken;
+
+    // Enviar para o servidor LiderWeb para criar sessão
+    const res = await fetch("https://liderweb.multitrackgospel.com/api/auth/google-native", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ idToken }),
+    });
+
+    if (!res.ok) throw new Error("Falha ao autenticar no servidor");
+
+    const data = await res.json();
+
+    // Setar cookie de sessão no WebView e redirecionar
+    if (data.token) {
+      document.cookie = `next-auth.session-token=${data.token}; path=/; secure; samesite=lax`;
+      const dest = data.user?.groupId ? "/dashboard" : "/signup?mode=new-group";
+      window.location.href = `https://liderweb.multitrackgospel.com${dest}`;
+      return true;
+    }
+
+    return false;
+  } catch (err) {
+    console.error("[LiderWeb] Google Sign-In erro:", err);
+    return false;
+  }
+}
+
+
 
 export async function getNetworkStatus() {
   const status = await Network.getStatus();
