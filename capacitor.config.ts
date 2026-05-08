@@ -13,11 +13,17 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
     captureInput: true,
     webContentsDebuggingEnabled: false,
+    appendUserAgent: "LiderWebApp/1.0",
     buildOptions: {
       releaseType: "APK",
     },
   },
   plugins: {
+    GoogleAuth: {
+      scopes: ["profile", "email"],
+      serverClientId: "510384512031-6bsejt1g5ffgg8e34n9kevt7hn4r8spv.apps.googleusercontent.com",
+      forceCodeForRefreshToken: true,
+    },
     SplashScreen: {
       launchShowDuration: 2000,
       launchAutoHide: true,
