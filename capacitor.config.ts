@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "com.multitrackgospel.liderweb",
+  appId: "com.liderweb.app",
   appName: "Líder Web",
   webDir: "www", // pasta dummy — app carrega via server.url
   server: {
