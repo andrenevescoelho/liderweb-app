@@ -5,6 +5,7 @@ import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { App } from "@capacitor/app";
 import { Network } from "@capacitor/network";
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 // ── Plataforma ───────────────────────────────────────────────────────────────
 
@@ -78,8 +79,21 @@ export async function registerPush(): Promise<string | null> {
       });
 
       // Notificação recebida com app aberto
-      PushNotifications.addListener("pushNotificationReceived", (notification) => {
+      PushNotifications.addListener("pushNotificationReceived", async (notification) => {
         console.log("[LiderWeb] Notificação recebida:", notification);
+
+        // Mostra notificação manualmente quando app está aberto
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: Date.now(),
+              title: notification.title || "LíderWeb",
+              body: notification.body || "",
+              schedule: { at: new Date(Date.now() + 100) },
+            },
+          ],
+        });
+
         window.dispatchEvent(new CustomEvent("lw:push", { detail: notification }));
       });
 

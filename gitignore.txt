@@ -1,0 +1,29 @@
+# Dependências
+node_modules/
+dist/
+
+# Android gerado (commitar apenas quando necessário)
+android/
+ios/
+
+# Assets gerados
+android/app/src/main/res/drawable*/
+android/app/src/main/res/mipmap*/
+
+# Keystore (NUNCA commitar)
+*.keystore
+*.jks
+google-services.json
+GoogleService-Info.plist
+
+# Build
+*.apk
+*.aab
+
+# IDE
+.idea/
+*.iml
+.DS_Store
+
+# Logs
+npm-debug.log*

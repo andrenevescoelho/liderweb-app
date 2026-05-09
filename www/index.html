@@ -22,21 +22,25 @@
   <p>Carregando Líder Web...</p>
 
   <script type="module">
-    // Aguardar o Capacitor carregar
-    document.addEventListener('deviceready', onReady, false);
-    window.addEventListener('load', onReady);
-
     let initialized = false;
+
     async function onReady() {
       if (initialized) return;
       initialized = true;
 
-      // Importar e inicializar o app
-      const { initApp, registerPush } = await import('./src/capacitor.js').catch(() => ({}));
-      if (initApp) await initApp();
-      if (registerPush) await registerPush();
+      try {
+        const { initApp } = await import('./src/capacitor.js');
+
+        if (initApp) {
+          await initApp();
+        }
+      } catch (err) {
+        console.error('[LiderWeb] Erro ao inicializar Capacitor:', err);
+      }
     }
+
+    document.addEventListener('deviceready', onReady, false);
+    window.addEventListener('load', onReady);
   </script>
 </body>
 </html>
-
