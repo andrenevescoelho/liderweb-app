@@ -1,85 +1,80 @@
-name: Build Android APK
+name: Build Android
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch: # permite rodar manualmente
+  workflow_dispatch:
 
 jobs:
   build:
-    name: Build APK
+    name: Build Android
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout
       - name: Checkout código
         uses: actions/checkout@v4
 
-      # 2. Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
 
-      # 3. Java (necessário para o Gradle)
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: "17"
 
-      # 4. Instalar dependências npm
       - name: Instalar dependências
         run: npm ci
 
-      # 5. Sincronizar Capacitor
       - name: Sincronizar Capacitor
         run: npx cap sync android
 
-      # 6. Copiar google-services.json (secret do GitHub)
-      - name: Configurar Firebase
+      - name: Configurar Firebase (google-services.json)
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
 
-      # 7. Tornar gradlew executável
       - name: Permissão Gradlew
         run: chmod +x android/gradlew
 
-      # 8. Build APK debug (para PRs e testes)
+      # ── Pull Request: APK Debug para testes ──────────────────────────────
       - name: Build APK Debug
         if: github.event_name == 'pull_request'
         run: cd android && ./gradlew assembleDebug
 
-      # 9. Build APK Release (para push na main)
-      - name: Build APK Release
+      - name: Upload APK Debug
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: liderweb-debug-${{ github.run_number }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+
+      # ── Main: AAB Release para Play Store ────────────────────────────────
+      - name: Decodificar Keystore
+        if: github.ref == 'refs/heads/main'
+        run: echo '${{ secrets.KEYSTORE_BASE64 }}' | base64 -d > android/app/liderweb.keystore
+
+      - name: Build AAB Release
         if: github.ref == 'refs/heads/main'
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          echo '${{ secrets.KEYSTORE_BASE64 }}' | base64 -d > android/app/liderweb.keystore
-          cd android && ./gradlew assembleRelease \
+          cd android && ./gradlew bundleRelease \
             -Pandroid.injected.signing.store.file=$GITHUB_WORKSPACE/android/app/liderweb.keystore \
             -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
             -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
             -Pandroid.injected.signing.key.password=$KEY_PASSWORD
 
-      # 10. Upload do APK como artefato
-      - name: Upload APK Debug
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: liderweb-debug
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 7
-
-      - name: Upload APK Release
+      - name: Upload AAB Release
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
-          name: liderweb-release-${{ github.run_number }}
-          path: android/app/build/outputs/apk/release/app-release.apk
-          retention-days: 30
+          name: liderweb-release-aab-${{ github.run_number }}
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 60
