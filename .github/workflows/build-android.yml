@@ -40,6 +40,13 @@ jobs:
       - name: Permissão Gradlew
         run: chmod +x android/gradlew
 
+      # Incrementar versionCode automaticamente com o run_number
+      - name: Atualizar versionCode
+        run: |
+          VERSION_CODE=${{ github.run_number }}
+          sed -i "s/versionCode [0-9]*/versionCode $VERSION_CODE/" android/app/build.gradle
+          echo "versionCode definido como: $VERSION_CODE"
+
       # ── Pull Request: APK Debug para testes ──────────────────────────────
       - name: Build APK Debug
         if: github.event_name == 'pull_request'
